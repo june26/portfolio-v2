@@ -2,8 +2,10 @@
 
 import { motion } from "motion/react";
 import { useState, type ReactNode } from "react";
+import type { Project } from "../data/projects";
 import AboutPage from "./AboutPage";
 import ContactPage from "./ContactPage";
+import ProjectDetail from "./ProjectDetail";
 import ProjectReel from "./ProjectReel";
 import Sidebar from "./Sidebar";
 
@@ -40,6 +42,10 @@ export default function Portfolio() {
   const [currentPage, setCurrentPage] = useState<PageName>("home");
   const goHome = () => setCurrentPage("home");
 
+  // The clicked project and where its card was on screen, so the project page can grow out of it.
+  const [openProject, setOpenProject] = useState<{ project: Project; cardRect: DOMRect } | null>(null);
+  const closeProject = () => setOpenProject(null);
+
   return (
     <div className="relative h-dvh overflow-hidden">
       <Panel name="home" currentPage={currentPage}>
@@ -48,7 +54,7 @@ export default function Portfolio() {
             onOpenAbout={() => setCurrentPage("about")}
             onOpenContact={() => setCurrentPage("contact")}
           />
-          <ProjectReel />
+          <ProjectReel onOpenProject={(project, cardRect) => setOpenProject({ project, cardRect })} />
         </div>
       </Panel>
 
@@ -59,6 +65,15 @@ export default function Portfolio() {
       <Panel name="contact" currentPage={currentPage}>
         <ContactPage onBack={goHome} />
       </Panel>
+
+      {openProject && (
+        <ProjectDetail
+          key={openProject.project.name}
+          openedProject={openProject.project}
+          cardRect={openProject.cardRect}
+          onClose={closeProject}
+        />
+      )}
     </div>
   );
 }

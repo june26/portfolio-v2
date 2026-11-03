@@ -8,9 +8,10 @@ type ProjectCardProps = {
   project: Project;
   position: number;
   total: number;
+  onOpen: (project: Project, cardRect: DOMRect) => void;
 };
 
-export default function ProjectCard({ project, position, total }: ProjectCardProps) {
+export default function ProjectCard({ project, position, total, onOpen }: ProjectCardProps) {
   const label = `${String(position).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
 
   return (
@@ -18,10 +19,10 @@ export default function ProjectCard({ project, position, total }: ProjectCardPro
       type="button"
       initial="rest"
       whileHover="hover"
-      whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
+      onClick={(event) => onOpen(project, event.currentTarget.getBoundingClientRect())}
       aria-label={`Open project ${project.name}`}
-      className="relative block aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-xl bg-background-200 text-left"
+      className="relative block aspect-[3/4] w-full md:aspect-[4/3] cursor-pointer overflow-hidden rounded-[calc(12px*var(--detail-opacity,1))] bg-background-200 text-left"
     >
       <motion.div
         className="absolute inset-0"
@@ -37,13 +38,13 @@ export default function ProjectCard({ project, position, total }: ProjectCardPro
           className="object-cover object-top"
         />
       </motion.div>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground-950/55 via-foreground-950/5 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground-950/55 via-foreground-950/5 to-transparent opacity-(--detail-opacity)" />
 
-      <span className="absolute right-3 top-3 flex h-6 items-center rounded-full bg-background-50/85 px-2.5 text-[9.5px] uppercase tracking-widest text-foreground-700 backdrop-blur-sm">
+      <span className="absolute right-3 top-3 flex h-6 opacity-(--detail-opacity) items-center rounded-full bg-background-50/85 px-2.5 text-[9.5px] uppercase tracking-widest text-foreground-700 backdrop-blur-sm">
         {label}
       </span>
 
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-4">
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-4 opacity-(--detail-opacity)">
         <div className="min-w-0">
           <p className="truncate text-[14px] font-medium text-background-50">{project.name}</p>
           <p className="mt-0.5 truncate text-[10px] uppercase tracking-widest text-background-50/70">

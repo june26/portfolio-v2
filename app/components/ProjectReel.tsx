@@ -1,32 +1,58 @@
 "use client";
 
 import { animate, motion, useMotionValue } from "motion/react";
-import { useEffect, useRef, type CSSProperties } from "react";
-import { projects } from "../data/projects";
+import { useEffect, useRef } from "react";
+import { projects, type Project } from "../data/projects";
 import ProjectCard from "./ProjectCard";
 import ReelItem from "./ReelItem";
 
-// Card width follows the window height but never gets tiny (e.g. when devtools is open)
-// and never wider than a phone screen. The space between cards follows the card width.
-const REEL_SIZE_VARS = {
-  "--card-width": "min(calc(100vw - 48px), clamp(240px, 50vh, 420px))",
-  "--reel-pitch": "calc(var(--card-width) * 0.92)",
-} as CSSProperties;
+// Card width. On phones the cards slide sideways, so it follows the screen width. On desktop they stack
+// vertically, so it follows the window height (but never gets tiny, e.g. when devtools is open,
+// and never wider than the screen).
+const CARD_SIZE =
+  "[--card-width:min(48vw,280px)] md:[--card-width:min(calc(100vw_-_48px),clamp(240px,50vh,420px))]";
 // Slight overshoot, so the reel settles with a small bounce.
 const STEP_SPRING = { type: "spring", stiffness: 200, damping: 20 } as const;
 const MIN_WHEEL_STRENGTH = 4;
-// Trackpad inertia keeps sending small, shrinking events after you lift your fingers.
+// Trackpad inertia keeps sending small, shrinking events after you lift your fingers (can last ~1s).
 // Only a pause this long, or a clearly stronger push, counts as a new scroll.
-const NEW_SCROLL_GAP_MS = 80;
+const NEW_SCROLL_GAP_MS = 150;
+const NEW_PUSH_STRENGTH = 40;
 // After a step, ignore input briefly so one swipe can never move two projects.
 const STEP_COOLDOWN_MS = 300;
 const MIN_SWIPE_PX = 30;
+const DESKTOP_VISIBLE_SIDES = 3;
+const MOBILE_VISIBLE_SIDES = 3;
 
-export default function ProjectReel() {
+type ProjectReelProps = {
+  onOpenProject: (project: Project, cardRect: DOMRect) => void;
+};
+
+// The reel shows 3 cards on each side of the center one, so a list of 6 would run into itself behind the
+// center card. Going around the list twice gives every card enough room. Both copies open the same project.
+const LOOPED_PROJECTS = [...projects, ...projects];
+
+export default function ProjectReel({ onOpenProject }: ProjectReelProps) {
   const reelRef = useRef<HTMLElement>(null);
   const reelPosition = useMotionValue(0);
   // Hidden until mounted, then faded in, so reloads never show a flash.
   const reelOpacity = useMotionValue(0);
+  const visibleSides = useMotionValue(DESKTOP_VISIBLE_SIDES);
+  // Phones slide the cards left and right, desktop stacks them up and down.
+  const isHorizontal = useMotionValue(1);
+
+  // Desktop shows 3 cards on each side of the center card, mobile only 2.
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+    const updateLayout = () => {
+      visibleSides.set(desktopQuery.matches ? DESKTOP_VISIBLE_SIDES : MOBILE_VISIBLE_SIDES);
+      isHorizontal.set(desktopQuery.matches ? 0 : 1);
+    };
+
+    updateLayout();
+    desktopQuery.addEventListener("change", updateLayout);
+    return () => desktopQuery.removeEventListener("change", updateLayout);
+  }, [visibleSides, isHorizontal]);
 
   useEffect(() => {
     const reel = reelRef.current;
@@ -51,30 +77,43 @@ export default function ProjectReel() {
 
     let lastWheelTime = 0;
     let lastWheelStrength = 0;
+    // After a step, stay locked until the wheel goes quiet, so trackpad inertia can't trigger a second step.
+    let isLocked = false;
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
 
-      const strength = Math.abs(event.deltaY);
+      // Sideways reel: follow whichever way the wheel or trackpad moves more.
+      const isSideways = isHorizontal.get() === 1 && Math.abs(event.deltaX) > Math.abs(event.deltaY);
+      const delta = isSideways ? event.deltaX : event.deltaY;
+      const strength = Math.abs(delta);
       const now = performance.now();
-      const isNewScroll = now - lastWheelTime > NEW_SCROLL_GAP_MS || strength > lastWheelStrength * 1.5;
+      const wasQuiet = now - lastWheelTime > NEW_SCROLL_GAP_MS;
+      const isClearlyNewPush = strength >= NEW_PUSH_STRENGTH && strength > lastWheelStrength * 1.5;
       lastWheelTime = now;
       lastWheelStrength = strength;
 
-      if (isNewScroll && strength >= MIN_WHEEL_STRENGTH) step(Math.sign(event.deltaY));
+      if (wasQuiet || isClearlyNewPush) isLocked = false;
+      if (isLocked || strength < MIN_WHEEL_STRENGTH) return;
+
+      isLocked = true;
+      step(Math.sign(delta));
     };
 
-    let touchStartY: number | null = null;
+    let touchStart: { x: number; y: number } | null = null;
     const handleTouchStart = (event: TouchEvent) => {
-      touchStartY = event.touches[0].clientY;
+      touchStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
     };
     const handleTouchMove = (event: TouchEvent) => {
-      if (touchStartY === null) return;
+      if (touchStart === null) return;
 
-      const swipe = touchStartY - event.touches[0].clientY;
+      // Swiping left goes to the next project (like turning a page), swiping up does the same when vertical.
+      const swipe = isHorizontal.get() === 1
+        ? touchStart.x - event.touches[0].clientX
+        : touchStart.y - event.touches[0].clientY;
       if (Math.abs(swipe) < MIN_SWIPE_PX) return;
 
       step(Math.sign(swipe));
-      touchStartY = null; // one step per swipe
+      touchStart = null; // one step per swipe
     };
 
     reel.addEventListener("wheel", handleWheel, { passive: false });
@@ -87,18 +126,29 @@ export default function ProjectReel() {
       reel.removeEventListener("touchstart", handleTouchStart);
       reel.removeEventListener("touchmove", handleTouchMove);
     };
-  }, [reelPosition, reelOpacity]);
+  }, [reelPosition, reelOpacity, isHorizontal]);
 
   return (
     <main
       ref={reelRef}
-      style={REEL_SIZE_VARS}
-      className="relative min-h-0 w-full flex-1 touch-none overflow-hidden md:w-[58%] md:flex-none"
+      className={`${CARD_SIZE} relative isolate min-h-0 w-full flex-1 touch-none overflow-hidden md:w-[58%] md:flex-none`}
     >
       <motion.div style={{ opacity: reelOpacity }}>
-        {projects.map((project, index) => (
-          <ReelItem key={project.name} index={index} count={projects.length} reelPosition={reelPosition}>
-            <ProjectCard project={project} position={index + 1} total={projects.length} />
+        {LOOPED_PROJECTS.map((project, index) => (
+          <ReelItem
+            key={`${project.name}-${index}`}
+            index={index}
+            count={LOOPED_PROJECTS.length}
+            reelPosition={reelPosition}
+            visibleSides={visibleSides}
+            isHorizontal={isHorizontal}
+          >
+            <ProjectCard
+              project={project}
+              position={(index % projects.length) + 1}
+              total={projects.length}
+              onOpen={onOpenProject}
+            />
           </ReelItem>
         ))}
       </motion.div>

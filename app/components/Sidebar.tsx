@@ -17,10 +17,10 @@ export default function Sidebar({ onOpenAbout, onOpenContact }: SidebarProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
-        <h1 className="text-[26px] font-medium leading-tight tracking-tight text-foreground-950 md:text-[26px] lg:text-[42px]">
+        <h1 className="text-[24px] font-medium leading-tight tracking-tight text-foreground-950 md:text-[26px] lg:text-[42px]">
           {profile.name}
         </h1>
-        <p className="mt-1 md:mt-0 text-[22px] leading-tight tracking-tight text-foreground-400 md:text-[20px] tracking-wider font-extralight">
+        <p className="mt-1 md:mt-0 text-[16px] leading-tight tracking-tight text-foreground-400 md:text-[20px] tracking-wider font-extralight">
           {profile.role}
         </p>
 
