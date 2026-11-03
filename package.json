@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:projects": "node --env-file=.env scripts/seed-projects.mjs"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "firebase": "^13.1.0",
     "firebase-admin": "^14.5.0",
     "motion": "^14.8.0",

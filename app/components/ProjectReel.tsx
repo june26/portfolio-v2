@@ -2,7 +2,7 @@
 
 import { animate, motion, useMotionValue } from "motion/react";
 import { useEffect, useRef } from "react";
-import { projects, type Project } from "../data/projects";
+import type { Project } from "../data/projects";
 import ProjectCard from "./ProjectCard";
 import ReelItem from "./ReelItem";
 
@@ -25,14 +25,14 @@ const DESKTOP_VISIBLE_SIDES = 3;
 const MOBILE_VISIBLE_SIDES = 3;
 
 type ProjectReelProps = {
+  projects: Project[];
   onOpenProject: (project: Project, cardRect: DOMRect) => void;
 };
 
-// The reel shows 3 cards on each side of the center one, so a list of 6 would run into itself behind the
-// center card. Going around the list twice gives every card enough room. Both copies open the same project.
-const LOOPED_PROJECTS = [...projects, ...projects];
-
-export default function ProjectReel({ onOpenProject }: ProjectReelProps) {
+export default function ProjectReel({ projects, onOpenProject }: ProjectReelProps) {
+  // The reel shows 3 cards on each side of the center one, so a short list would run into itself behind the
+  // center card. Going around the list twice gives every card enough room. Both copies open the same project.
+  const loopedProjects = [...projects, ...projects];
   const reelRef = useRef<HTMLElement>(null);
   const reelPosition = useMotionValue(0);
   // Hidden until mounted, then faded in, so reloads never show a flash.
@@ -134,11 +134,11 @@ export default function ProjectReel({ onOpenProject }: ProjectReelProps) {
       className={`${CARD_SIZE} relative isolate min-h-0 w-full flex-1 touch-none overflow-hidden md:w-[58%] md:flex-none`}
     >
       <motion.div style={{ opacity: reelOpacity }}>
-        {LOOPED_PROJECTS.map((project, index) => (
+        {loopedProjects.map((project, index) => (
           <ReelItem
             key={`${project.name}-${index}`}
             index={index}
-            count={LOOPED_PROJECTS.length}
+            count={loopedProjects.length}
             reelPosition={reelPosition}
             visibleSides={visibleSides}
             isHorizontal={isHorizontal}

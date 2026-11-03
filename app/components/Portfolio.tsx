@@ -38,7 +38,11 @@ function Panel({ name, currentPage, children }: PanelProps) {
   );
 }
 
-export default function Portfolio() {
+type PortfolioProps = {
+  projects: Project[];
+};
+
+export default function Portfolio({ projects }: PortfolioProps) {
   const [currentPage, setCurrentPage] = useState<PageName>("home");
   const goHome = () => setCurrentPage("home");
 
@@ -54,7 +58,7 @@ export default function Portfolio() {
             onOpenAbout={() => setCurrentPage("about")}
             onOpenContact={() => setCurrentPage("contact")}
           />
-          <ProjectReel onOpenProject={(project, cardRect) => setOpenProject({ project, cardRect })} />
+          <ProjectReel projects={projects} onOpenProject={(project, cardRect) => setOpenProject({ project, cardRect })} />
         </div>
       </Panel>
 
@@ -69,6 +73,7 @@ export default function Portfolio() {
       {openProject && (
         <ProjectDetail
           key={openProject.project.name}
+          projects={projects}
           openedProject={openProject.project}
           cardRect={openProject.cardRect}
           onClose={closeProject}

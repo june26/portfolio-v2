@@ -6,7 +6,10 @@ const nextConfig: NextConfig = {
     agentFeedback: true,
   },
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "readdy.ai" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "readdy.ai" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+    ],
   },
   cacheComponents: true,
   partialPrefetching: true,

@@ -3,9 +3,10 @@
 import { animate, motion, useMotionValue, type MotionValue } from "motion/react";
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { projects, type Project } from "../data/projects";
+import type { Project } from "../data/projects";
 
 type ProjectDetailProps = {
+  projects: Project[];
   // The project whose card was clicked, and where that card was on screen.
   openedProject: Project;
   cardRect: DOMRect;
@@ -43,7 +44,7 @@ function ToolbarButton({ label, onClick, children }: ToolbarButtonProps) {
   );
 }
 
-export default function ProjectDetail({ openedProject, cardRect, onClose }: ProjectDetailProps) {
+export default function ProjectDetail({ projects, openedProject, cardRect, onClose }: ProjectDetailProps) {
   const [currentProject, setCurrentProject] = useState(openedProject);
   // The first project grows out of its card; after paging to another one, new projects just rise in.
   const [hasPaged, setHasPaged] = useState(false);
