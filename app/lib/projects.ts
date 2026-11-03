@@ -16,6 +16,7 @@ function toProject(data: FirebaseFirestore.DocumentData): Project {
     stack: toTextList(data.stack),
     summary: toText(data.summary),
     client: toText(data.client),
+    company: toText(data.company),
     scope: toTextList(data.scope),
     narrative: toTextList(data.narrative),
   };

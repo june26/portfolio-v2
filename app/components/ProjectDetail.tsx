@@ -59,10 +59,11 @@ export default function ProjectDetail({ projects, openedProject, cardRect, onClo
 
   const meta = [
     { label: "Client", value: currentProject.client },
+    { label: "Company", value: currentProject.company },
     { label: "Role", value: currentProject.role },
     { label: "Year", value: currentProject.year },
     { label: "Scope", value: currentProject.category },
-  ];
+  ].filter((item) => item.value);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
