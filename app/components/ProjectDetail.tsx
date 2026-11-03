@@ -66,6 +66,8 @@ export default function ProjectDetail({ openedProject, cardRect, onClose }: Proj
   const scrollRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
   const isClosingRef = useRef(false);
+  // The flying copy only exists while it is flying, so it can never stay stuck in front of the page.
+  const [isFlying, setIsFlying] = useState(true);
 
   // A copy of the card image that really resizes (position + size, not a stretched transform)
   // between the card and the cover, so the image is never distorted while it grows or shrinks.
@@ -97,6 +99,7 @@ export default function ProjectDetail({ openedProject, cardRect, onClose }: Proj
 
     coverOpacity.set(1);
     flyOpacity.set(0);
+    setIsFlying(false);
     animate(coverDetailsOpacity, 1, { duration: 0.4 });
   };
 
@@ -133,6 +136,7 @@ export default function ProjectDetail({ openedProject, cardRect, onClose }: Proj
     flyBottomRadius.set(0);
     flyOpacity.set(1);
     coverOpacity.set(0);
+    setIsFlying(true);
 
     // The card may have moved since it was clicked, so measure it again. The reel has two copies of every
     // project, so take the copy closest to where the clicked card was.
@@ -158,7 +162,7 @@ export default function ProjectDetail({ openedProject, cardRect, onClose }: Proj
   });
 
   return (
-    <div ref={scrollRef} onScroll={landCover} className="fixed inset-0 z-50 overflow-y-auto">
+    <div ref={scrollRef} className="fixed inset-0 z-50 overflow-y-auto">
       {/* The page background fades on its own, so it never fades the image flying in. */}
       <motion.div className="fixed inset-0 bg-background-50" style={{ opacity: backgroundOpacity }} />
 
@@ -267,20 +271,22 @@ export default function ProjectDetail({ openedProject, cardRect, onClose }: Proj
         </motion.article>
       </motion.div>
 
-      <FlyingCover
-        project={currentProject}
-        style={{
-          top: flyTop,
-          left: flyLeft,
-          width: flyWidth,
-          height: flyHeight,
-          borderTopLeftRadius: flyTopRadius,
-          borderTopRightRadius: flyTopRadius,
-          borderBottomLeftRadius: flyBottomRadius,
-          borderBottomRightRadius: flyBottomRadius,
-          opacity: flyOpacity,
-        }}
-      />
+      {isFlying && (
+        <FlyingCover
+          project={currentProject}
+          style={{
+            top: flyTop,
+            left: flyLeft,
+            width: flyWidth,
+            height: flyHeight,
+            borderTopLeftRadius: flyTopRadius,
+            borderTopRightRadius: flyTopRadius,
+            borderBottomLeftRadius: flyBottomRadius,
+            borderBottomRightRadius: flyBottomRadius,
+            opacity: flyOpacity,
+          }}
+        />
+      )}
     </div>
   );
 }
