@@ -1,4 +1,4 @@
-import { cacheLife } from "next/cache";
+import { connection } from "next/server";
 import { projects as fallbackProjects, type Project } from "../data/projects";
 import { adminDb } from "./admin";
 
@@ -22,11 +22,8 @@ function toProject(data: FirebaseFirestore.DocumentData): Project {
   };
 }
 
-// Errors are thrown out of the cached function on purpose, so a failed read is never cached.
+// Not cached on purpose: an edit in Firestore shows on the next visit, with no redeploy.
 async function readProjects() {
-  "use cache";
-  cacheLife("minutes");
-
   const snapshot = await adminDb().collection("projects").orderBy("order").get();
   return snapshot.docs
     .map((doc) => ({ slug: doc.id, ...toProject(doc.data()) }))
@@ -37,6 +34,7 @@ export type ProjectWithSlug = Project & { slug: string };
 
 // Falls back to the local list while Firestore is empty or unreachable, so the site never shows nothing.
 export async function getProjects(): Promise<ProjectWithSlug[]> {
+  await connection(); // read at request time, never at build time
   try {
     const list = await readProjects();
     if (list.length > 0) return list;
