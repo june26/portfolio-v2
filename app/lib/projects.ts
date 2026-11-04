@@ -1,5 +1,5 @@
 import type { Project } from "../data/projects";
-import { adminDb } from "./admin";
+import { adminDb } from "./adminApp";
 
 // Server only. Projects live in the Firestore "projects" collection (document id = slug, `order` sorts them).
 const toText = (value: unknown) => (typeof value === "string" ? value : "");
