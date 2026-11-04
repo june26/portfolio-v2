@@ -1,4 +1,4 @@
-import { projects as fallbackProjects, type Project } from "../data/projects";
+import type { Project } from "../data/projects";
 import { adminDb } from "./admin";
 
 // Server only. Projects live in the Firestore "projects" collection (document id = slug, `order` sorts them).
@@ -21,23 +21,12 @@ function toProject(data: FirebaseFirestore.DocumentData): Project {
   };
 }
 
-// Not cached on purpose: an edit in Firestore shows on the next visit, with no redeploy.
-async function readProjects() {
+export type ProjectWithSlug = Project & { slug: string };
+
+// Not cached on purpose: an edit in Firestore shows on the next request, with no redeploy.
+export async function getProjects(): Promise<ProjectWithSlug[]> {
   const snapshot = await adminDb().collection("projects").orderBy("order").get();
   return snapshot.docs
     .map((doc) => ({ slug: doc.id, ...toProject(doc.data()) }))
     .filter((project) => project.name && project.imageUrl); // skip half-filled documents
-}
-
-export type ProjectWithSlug = Project & { slug: string };
-
-// Falls back to the local list while Firestore is empty or unreachable, so the site never shows nothing.
-export async function getProjects(): Promise<ProjectWithSlug[]> {
-  try {
-    const list = await readProjects();
-    if (list.length > 0) return list;
-  } catch (error) {
-    console.error("Could not read projects from Firestore, using the local list", error);
-  }
-  return fallbackProjects.map((project) => ({ ...project, slug: project.name.toLowerCase().replace(/\s+/g, "-") }));
 }

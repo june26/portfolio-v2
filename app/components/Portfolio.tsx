@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
-import { projects as localProjects, type Project } from "../data/projects";
+import type { Project } from "../data/projects";
 import AboutPage from "./AboutPage";
 import ContactPage from "./ContactPage";
 import ProjectDetail from "./ProjectDetail";
@@ -38,18 +38,19 @@ function Panel({ name, currentPage, children }: PanelProps) {
   );
 }
 
-async function loadProjects(): Promise<Project[]> {
+// Projects come from Firestore through the API, fetched fresh on every visit. Returns null when it can't load.
+async function loadProjects(): Promise<Project[] | null> {
   try {
     const response = await fetch("/api/projects", { cache: "no-store" });
-    const list: Project[] = await response.json();
-    return response.ok && list.length > 0 ? list : localProjects;
+    return response.ok ? await response.json() : null;
   } catch {
-    return localProjects;
+    return null;
   }
 }
 
 export default function Portfolio() {
-  const [projects, setProjects] = useState<Project[] | null>(null);
+  // undefined = still loading, null = could not load
+  const [projects, setProjects] = useState<Project[] | null | undefined>(undefined);
   useEffect(() => {
     loadProjects().then(setProjects);
   }, []);
@@ -69,10 +70,16 @@ export default function Portfolio() {
             onOpenAbout={() => setCurrentPage("about")}
             onOpenContact={() => setCurrentPage("contact")}
           />
-          {projects ? (
+          {projects && projects.length > 0 ? (
             <ProjectReel projects={projects} onOpenProject={(project, cardRect) => setOpenProject({ project, cardRect })} />
           ) : (
-            <main className="min-h-0 w-full flex-1 md:w-[58%] md:flex-none" />
+            <main className="flex min-h-0 w-full flex-1 items-center justify-center md:w-[58%] md:flex-none">
+              {projects !== undefined && (
+                <p className="text-[12px] uppercase tracking-widest text-foreground-400">
+                  {projects === null ? "Could not load projects" : "No projects yet"}
+                </p>
+              )}
+            </main>
           )}
         </div>
       </Panel>

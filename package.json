@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "seed:projects": "node --env-file=.env scripts/seed-projects.mjs"
+    "lint": "eslint"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
