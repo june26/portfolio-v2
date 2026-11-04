@@ -1,4 +1,5 @@
 export type Project = {
+  slug: string; // the Firestore document id, used in the URL: /projects/<slug>
   name: string;
   category: string;
   imageUrl: string;

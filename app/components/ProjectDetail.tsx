@@ -7,9 +7,10 @@ import type { Project } from "../data/projects";
 
 type ProjectDetailProps = {
   projects: Project[];
-  // The project whose card was clicked, and where that card was on screen.
-  openedProject: Project;
+  // The project in the address bar, and where its card was on screen.
+  project: Project;
   cardRect: DOMRect;
+  onNavigate: (project: Project) => void;
   onClose: () => void;
 };
 
@@ -44,8 +45,7 @@ function ToolbarButton({ label, onClick, children }: ToolbarButtonProps) {
   );
 }
 
-export default function ProjectDetail({ projects, openedProject, cardRect, onClose }: ProjectDetailProps) {
-  const [currentProject, setCurrentProject] = useState(openedProject);
+export default function ProjectDetail({ projects, project: currentProject, cardRect, onNavigate, onClose }: ProjectDetailProps) {
   // The first project grows out of its card; after paging to another one, new projects just rise in.
   const [hasPaged, setHasPaged] = useState(false);
   const currentIndex = projects.findIndex((project) => project.name === currentProject.name);
@@ -53,8 +53,8 @@ export default function ProjectDetail({ projects, openedProject, cardRect, onClo
 
   const goToProject = (direction: number) => {
     const nextIndex = (currentIndex + direction + projects.length) % projects.length;
-    setCurrentProject(projects[nextIndex]);
     setHasPaged(true);
+    onNavigate(projects[nextIndex]);
   };
 
   const meta = [

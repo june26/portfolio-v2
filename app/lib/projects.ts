@@ -5,8 +5,9 @@ import { adminDb } from "./adminApp";
 const toText = (value: unknown) => (typeof value === "string" ? value : "");
 const toTextList = (value: unknown) => (Array.isArray(value) ? value.filter((item) => typeof item === "string") : []);
 
-function toProject(data: FirebaseFirestore.DocumentData): Project {
+function toProject(slug: string, data: FirebaseFirestore.DocumentData): Project {
   return {
+    slug,
     name: toText(data.name),
     category: toText(data.category),
     imageUrl: toText(data.imageUrl),
@@ -21,12 +22,10 @@ function toProject(data: FirebaseFirestore.DocumentData): Project {
   };
 }
 
-export type ProjectWithSlug = Project & { slug: string };
-
 // Not cached on purpose: an edit in Firestore shows on the next request, with no redeploy.
-export async function getProjects(): Promise<ProjectWithSlug[]> {
+export async function getProjects(): Promise<Project[]> {
   const snapshot = await adminDb().collection("projects").orderBy("order").get();
   return snapshot.docs
-    .map((doc) => ({ slug: doc.id, ...toProject(doc.data()) }))
+    .map((doc) => toProject(doc.id, doc.data()))
     .filter((project) => project.name && project.imageUrl); // skip half-filled documents
 }

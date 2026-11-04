@@ -13,7 +13,6 @@ const FIELD_CLASS =
 
 type SendStatus = "idle" | "sending" | "sent" | "failed";
 
-// The "sent" state is shown by the thank-you modal, so the button just goes back to normal.
 const BUTTON_LABEL: Record<SendStatus, string> = {
   idle: "Send message",
   sending: "Sending…",
