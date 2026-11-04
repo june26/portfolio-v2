@@ -1,14 +1,12 @@
 "use client";
 
-import { animate, motion, useMotionValue } from "motion/react";
+import { animate, AnimatePresence, motion, useMotionValue } from "motion/react";
 import { useEffect, useRef } from "react";
 import type { Project } from "../data/projects";
 import ProjectCard from "./ProjectCard";
 import ReelItem from "./ReelItem";
+import ReelSkeleton from "./ReelSkeleton";
 
-// Card width. On phones the cards slide sideways, so it follows the screen width. On desktop they stack
-// vertically, so it follows the window height (but never gets tiny, e.g. when devtools is open,
-// and never wider than the screen).
 const CARD_SIZE =
   "[--card-width:min(48vw,280px)] md:[--card-width:min(calc(100vw_-_48px),clamp(240px,50vh,420px))]";
 // Slight overshoot, so the reel settles with a small bounce.
@@ -25,18 +23,18 @@ const DESKTOP_VISIBLE_SIDES = 3;
 const MOBILE_VISIBLE_SIDES = 3;
 
 type ProjectReelProps = {
-  projects: Project[];
+  // undefined = still loading (skeleton), null = could not load
+  projects: Project[] | null | undefined;
   onOpenProject: (project: Project, cardRect: DOMRect) => void;
 };
 
 export default function ProjectReel({ projects, onOpenProject }: ProjectReelProps) {
   // The reel shows 3 cards on each side of the center one, so a short list would run into itself behind the
   // center card. Going around the list twice gives every card enough room. Both copies open the same project.
-  const loopedProjects = [...projects, ...projects];
+  const loadedProjects = projects ?? [];
+  const loopedProjects = [...loadedProjects, ...loadedProjects];
   const reelRef = useRef<HTMLElement>(null);
   const reelPosition = useMotionValue(0);
-  // Hidden until mounted, then faded in, so reloads never show a flash.
-  const reelOpacity = useMotionValue(0);
   const visibleSides = useMotionValue(DESKTOP_VISIBLE_SIDES);
   // Phones slide the cards left and right, desktop stacks them up and down.
   const isHorizontal = useMotionValue(1);
@@ -57,8 +55,6 @@ export default function ProjectReel({ projects, onOpenProject }: ProjectReelProp
   useEffect(() => {
     const reel = reelRef.current;
     if (!reel) return;
-
-    const fadeIn = animate(reelOpacity, 1, { duration: 0.8, ease: "easeOut" });
 
     // No native scrolling here: each wheel scroll or swipe moves the reel exactly one project.
     let targetIndex = Math.round(reelPosition.get());
@@ -120,20 +116,26 @@ export default function ProjectReel({ projects, onOpenProject }: ProjectReelProp
     reel.addEventListener("touchstart", handleTouchStart, { passive: true });
     reel.addEventListener("touchmove", handleTouchMove, { passive: true });
     return () => {
-      fadeIn.stop();
       moveAnimation?.stop();
       reel.removeEventListener("wheel", handleWheel);
       reel.removeEventListener("touchstart", handleTouchStart);
       reel.removeEventListener("touchmove", handleTouchMove);
     };
-  }, [reelPosition, reelOpacity, isHorizontal]);
+  }, [reelPosition, isHorizontal]);
 
   return (
     <main
       ref={reelRef}
       className={`${CARD_SIZE} relative isolate min-h-0 w-full flex-1 touch-none overflow-hidden md:w-[58%] md:flex-none`}
     >
-      <motion.div style={{ opacity: reelOpacity }}>
+      <AnimatePresence>{projects === undefined && <ReelSkeleton key="skeleton" />}</AnimatePresence>
+      {(projects === null || projects?.length === 0) && (
+        <p className="absolute inset-0 flex items-center justify-center text-[12px] uppercase tracking-widest text-foreground-400">
+          {projects === null ? "Could not load projects" : "No projects yet"}
+        </p>
+      )}
+      {/* The cards fade in once the projects are here, as the skeleton fades out. */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, ease: "easeOut" }}>
         {loopedProjects.map((project, index) => (
           <ReelItem
             key={`${project.name}-${index}`}
@@ -145,8 +147,8 @@ export default function ProjectReel({ projects, onOpenProject }: ProjectReelProp
           >
             <ProjectCard
               project={project}
-              position={(index % projects.length) + 1}
-              total={projects.length}
+              position={(index % loadedProjects.length) + 1}
+              total={loadedProjects.length}
               onOpen={onOpenProject}
             />
           </ReelItem>

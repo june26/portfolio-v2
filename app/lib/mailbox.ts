@@ -47,7 +47,14 @@ export async function signOutAdmin() {
   await fetch("/api/mailbox/session", { method: "DELETE" });
 }
 
-// Returns null when there is no valid session cookie (not signed in, or it expired).
+export async function checkSession(): Promise<boolean> {
+  const response = await fetch("/api/mailbox/session", { cache: "no-store" });
+  if (!response.ok) return false;
+
+  const { signedIn } = await response.json();
+  return signedIn === true;
+}
+
 export async function fetchMessages(): Promise<Message[] | null> {
   const response = await fetch("/api/mailbox/messages", { cache: "no-store" });
   if (response.status === 401) return null;

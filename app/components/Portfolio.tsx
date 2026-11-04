@@ -70,17 +70,7 @@ export default function Portfolio() {
             onOpenAbout={() => setCurrentPage("about")}
             onOpenContact={() => setCurrentPage("contact")}
           />
-          {projects && projects.length > 0 ? (
-            <ProjectReel projects={projects} onOpenProject={(project, cardRect) => setOpenProject({ project, cardRect })} />
-          ) : (
-            <main className="flex min-h-0 w-full flex-1 items-center justify-center md:w-[58%] md:flex-none">
-              {projects !== undefined && (
-                <p className="text-[12px] uppercase tracking-widest text-foreground-400">
-                  {projects === null ? "Could not load projects" : "No projects yet"}
-                </p>
-              )}
-            </main>
-          )}
+          <ProjectReel projects={projects} onOpenProject={(project, cardRect) => setOpenProject({ project, cardRect })} />
         </div>
       </Panel>
 

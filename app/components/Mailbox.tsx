@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
-import { fetchMessages, setMessageRead, signInAsAdmin, signOutAdmin, type Message } from "../lib/mailbox";
+import { checkSession, fetchMessages, setMessageRead, signInAsAdmin, signOutAdmin, type Message } from "../lib/mailbox";
 import MessageDetail from "./MessageDetail";
 import MessageList from "./MessageList";
 
@@ -24,15 +24,21 @@ export default function Mailbox() {
     setSession("signedIn");
   }, []);
 
-  // The cookie is HttpOnly, so the only way to know if we are signed in is to ask the server.
+  // First ask only "am I signed in?". The inbox is never requested before that is a yes.
   useEffect(() => {
-    // If a refresh fails, keep what is on screen. The next one tries again.
-    const loadMessages = () => fetchMessages().then(showMessages).catch(() => {});
-
-    loadMessages();
-    const refresh = setInterval(loadMessages, REFRESH_EVERY_MS);
-    return () => clearInterval(refresh);
+    checkSession()
+      .then((signedIn) => (signedIn ? fetchMessages() : null))
+      .then(showMessages)
+      .catch(() => setSession("signedOut"));
   }, [showMessages]);
+
+  // Once signed in, keep the list fresh. If a refresh fails, keep what is on screen.
+  useEffect(() => {
+    if (session !== "signedIn") return;
+
+    const refresh = setInterval(() => fetchMessages().then(showMessages).catch(() => {}), REFRESH_EVERY_MS);
+    return () => clearInterval(refresh);
+  }, [session, showMessages]);
 
   const signIn = async () => {
     setSignInError("");
