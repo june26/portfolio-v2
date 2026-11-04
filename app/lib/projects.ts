@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import { projects as fallbackProjects, type Project } from "../data/projects";
 import { adminDb } from "./admin";
 
@@ -34,7 +33,6 @@ export type ProjectWithSlug = Project & { slug: string };
 
 // Falls back to the local list while Firestore is empty or unreachable, so the site never shows nothing.
 export async function getProjects(): Promise<ProjectWithSlug[]> {
-  await connection(); // read at request time, never at build time
   try {
     const list = await readProjects();
     if (list.length > 0) return list;

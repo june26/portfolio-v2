@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useState, type ReactNode } from "react";
-import type { Project } from "../data/projects";
+import { useEffect, useState, type ReactNode } from "react";
+import { projects as localProjects, type Project } from "../data/projects";
 import AboutPage from "./AboutPage";
 import ContactPage from "./ContactPage";
 import ProjectDetail from "./ProjectDetail";
@@ -38,15 +38,26 @@ function Panel({ name, currentPage, children }: PanelProps) {
   );
 }
 
-type PortfolioProps = {
-  projects: Project[];
-};
+async function loadProjects(): Promise<Project[]> {
+  try {
+    const response = await fetch("/api/projects", { cache: "no-store" });
+    const list: Project[] = await response.json();
+    return response.ok && list.length > 0 ? list : localProjects;
+  } catch {
+    return localProjects;
+  }
+}
 
-export default function Portfolio({ projects }: PortfolioProps) {
+export default function Portfolio() {
+  const [projects, setProjects] = useState<Project[] | null>(null);
+  useEffect(() => {
+    loadProjects().then(setProjects);
+  }, []);
+
   const [currentPage, setCurrentPage] = useState<PageName>("home");
   const goHome = () => setCurrentPage("home");
 
-  // The clicked project and where its card was on screen, so the project page can grow out of it.
+
   const [openProject, setOpenProject] = useState<{ project: Project; cardRect: DOMRect } | null>(null);
   const closeProject = () => setOpenProject(null);
 
@@ -58,7 +69,11 @@ export default function Portfolio({ projects }: PortfolioProps) {
             onOpenAbout={() => setCurrentPage("about")}
             onOpenContact={() => setCurrentPage("contact")}
           />
-          <ProjectReel projects={projects} onOpenProject={(project, cardRect) => setOpenProject({ project, cardRect })} />
+          {projects ? (
+            <ProjectReel projects={projects} onOpenProject={(project, cardRect) => setOpenProject({ project, cardRect })} />
+          ) : (
+            <main className="min-h-0 w-full flex-1 md:w-[58%] md:flex-none" />
+          )}
         </div>
       </Panel>
 
@@ -70,7 +85,7 @@ export default function Portfolio({ projects }: PortfolioProps) {
         <ContactPage onBack={goHome} />
       </Panel>
 
-      {openProject && (
+      {openProject && projects && (
         <ProjectDetail
           key={openProject.project.name}
           projects={projects}
